@@ -7,6 +7,7 @@ export type User = {
   name: string;
   email: string;
   password: string;
+  role: 'admin' | 'guest'; // ✨ 追加: ユーザーの役割
 };
 
 export type Customer = {
