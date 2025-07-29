@@ -1,13 +1,9 @@
-// This file contains type definitions for your data.
-// It describes the shape of the data, and what data type each property should accept.
-// For simplicity of teaching, we're manually defining these types.
-// However, these types are generated automatically if you're using an ORM such as Prisma.
 export type User = {
   id: string;
   name: string;
   email: string;
   password: string;
-  role: 'admin' | 'guest'; // ✨ 追加: ユーザーの役割
+  role: 'admin' | 'user'; // ユーザの役割を定義する。管理者と一般ユーザの2つの役割がある。
 };
 
 export type Customer = {
@@ -40,7 +36,6 @@ export type LatestInvoice = {
   amount: string;
 };
 
-// The database returns a number for amount, but we later format it to a string with the formatCurrency function
 export type LatestInvoiceRaw = Omit<LatestInvoice, 'amount'> & {
   amount: number;
 };
