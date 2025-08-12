@@ -12,15 +12,19 @@ export const metadata: Metadata = {
   title: 'Users',
 };
 
-// Propsの型定義を修正
-// searchParams の型を Record<string, string | string[] | undefined> にします。
+
+interface SearchPageProps {
+  searchParams: {
+    query?: string;
+    page?: string;
+  };
+}
+
 export default async function Page({
   searchParams,
-}: {
-  searchParams?: Record<string, string | string[] | undefined>;
-}) {
-  const query = (searchParams?.query as string) || '';
-  const currentPage = Number(searchParams?.page) || 1;
+}: SearchPageProps) {
+  const query = searchParams.query || '';
+  const currentPage = Number(searchParams.page) || 1;
 
   const totalPages = await fetchUsersPages(query);
 
