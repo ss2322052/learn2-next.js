@@ -36,14 +36,11 @@ export default async function Page({ searchParams }: PageProps) {
         <h1 className={`text-2xl`}>Users</h1>
       </div>
       <div className="mt-4 flex items-center justify-between gap-2 md:mt-8">
-        {/* ユーザー検索コンポーネント */}
         <Search placeholder="Search users..." />
       </div>
-      {/* ユーザーテーブルコンポーネント */}
       <Suspense key={query + currentPage} fallback={<InvoicesTableSkeleton />}>
         <Table query={query} currentPage={currentPage} />
       </Suspense>
-      {/* ページネーションコンポーネント */}
       <div className="mt-5 flex w-full justify-center">
         <Pagination totalPages={totalPages} />
       </div>
