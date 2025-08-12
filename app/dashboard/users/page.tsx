@@ -2,7 +2,7 @@
 
 import Pagination from '@/app/ui/invoices/pagination';
 import Search from '@/app/ui/search';
-import Table from '@/app/ui/users/table'; // ユーザーテーブルをインポート
+import Table from '@/app/ui/users/table';
 import { InvoicesTableSkeleton } from '@/app/ui/skeletons';
 import { Suspense } from 'react';
 import { fetchUsersPages } from '@/app/lib/data';
@@ -12,18 +12,16 @@ export const metadata: Metadata = {
   title: 'Users',
 };
 
-
-interface SearchPageProps {
-  searchParams: {
-    query?: string;
-    page?: string;
-  };
-}
-
+// Propsの型定義を修正
+// searchParams は必ず存在するため、? を付けない
 export default async function Page({
   searchParams,
-}: SearchPageProps) {
-  const query = searchParams.query || '';
+}: {
+  // searchParams 自体はオプショナルではない
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  // searchParams は必ず存在するので、オプショナルチェーン（?.）を削除
+  const query = (searchParams.query as string) || '';
   const currentPage = Number(searchParams.page) || 1;
 
   const totalPages = await fetchUsersPages(query);
