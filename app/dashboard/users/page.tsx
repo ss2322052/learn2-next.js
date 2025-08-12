@@ -12,15 +12,18 @@ export const metadata: Metadata = {
   title: 'Users',
 };
 
-// Propsの型定義を修正
-// searchParams は必ず存在するため、? を付けない
+// Next.jsのPagePropsに合うように、paramsも含めて型を定義する
+interface PageProps {
+  // 動的ルートパラメータ。使用しない場合でも含める。
+  params: { [key: string]: string | string[] };
+  // URLのクエリパラメータ
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
 export default async function Page({
   searchParams,
-}: {
-  // searchParams 自体はオプショナルではない
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
-  // searchParams は必ず存在するので、オプショナルチェーン（?.）を削除
+}: PageProps) {
+  // searchParamsは常に存在するため、?.は不要
   const query = (searchParams.query as string) || '';
   const currentPage = Number(searchParams.page) || 1;
 
