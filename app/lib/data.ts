@@ -1,7 +1,6 @@
-
 import postgres from 'postgres';
-
 import {
+  User, // ✨ `User`型をインポート
   CustomerField,
   CustomersTableType,
   InvoiceForm,
@@ -10,10 +9,12 @@ import {
   Revenue,
 } from './definitions';
 import { formatCurrency } from './utils';
+import { unstable_noStore as noStore } from 'next/cache'; // キャッシュを無効化する関数
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
 export async function fetchRevenue() {
+  noStore(); // この関数がキャッシュされないようにします
   try {
     // デモのために人為的に応答を遅らせる
     console.log('Fetching revenue data...');
@@ -31,6 +32,7 @@ export async function fetchRevenue() {
 }
 
 export async function fetchLatestInvoices() {
+  noStore();
   try {
     const data = await sql<LatestInvoiceRaw[]>`
       SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
@@ -51,6 +53,7 @@ export async function fetchLatestInvoices() {
 }
 
 export async function fetchCardData() {
+  noStore();
   try {
     // You can probably combine these into a single SQL query
     // However, we are intentionally splitting them to demonstrate
@@ -86,12 +89,65 @@ export async function fetchCardData() {
 }
 
 const ITEMS_PER_PAGE = 6;
+
+// ✨ ロールに基づいてユーザーをフィルタリングする新しい関数
+export async function fetchFilteredUsers(
+  query: string,
+  currentPage: number,
+) {
+  noStore();
+  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+
+  try {
+    // クエリを修正し、WHERE句に "role != 'admin'" を追加
+    // これにより、取得されるユーザーが 'admin' 以外に限定されます
+    const users = await sql<User[]>`
+      SELECT
+        id,
+        name,
+        email,
+        password,
+        role
+      FROM users
+      WHERE
+        name ILIKE ${`%${query}%`} AND role != 'admin'
+      ORDER BY name DESC
+      LIMIT ${ITEMS_PER_PAGE} OFFSET ${offset}
+    `;
+
+    return users;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch users.');
+  }
+}
+
+// ユーザーリストの総ページ数を取得する関数
+export async function fetchUsersPages(query: string) {
+  noStore();
+  try {
+    // ページネーション用のクエリも同様に、"role != 'admin'" を追加
+    const count = await sql`SELECT COUNT(*)
+    FROM users
+    WHERE
+      name ILIKE ${`%${query}%`} AND role != 'admin'
+    `;
+
+    const totalPages = Math.ceil(Number(count[0].count) / ITEMS_PER_PAGE);
+    return totalPages;
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to fetch total number of users.');
+  }
+}
+
+
 export async function fetchFilteredInvoices(
   query: string,
   currentPage: number,
 ) {
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
-
+  noStore();
   try {
     const invoices = await sql<InvoicesTable[]>`
       SELECT
@@ -122,6 +178,7 @@ export async function fetchFilteredInvoices(
 }
 
 export async function fetchInvoicesPages(query: string) {
+  noStore();
   try {
     const data = await sql`SELECT COUNT(*)
     FROM invoices
@@ -143,6 +200,7 @@ export async function fetchInvoicesPages(query: string) {
 }
 
 export async function fetchInvoiceById(id: string) {
+  noStore();
   try {
     const data = await sql<InvoiceForm[]>`
       SELECT
@@ -167,6 +225,7 @@ export async function fetchInvoiceById(id: string) {
 }
 
 export async function fetchCustomers() {
+  noStore();
   try {
     const customers = await sql<CustomerField[]>`
       SELECT
@@ -184,24 +243,25 @@ export async function fetchCustomers() {
 }
 
 export async function fetchFilteredCustomers(query: string) {
+  noStore();
   try {
     const data = await sql<CustomersTableType[]>`
-		SELECT
-		  customers.id,
-		  customers.name,
-		  customers.email,
-		  customers.image_url,
-		  COUNT(invoices.id) AS total_invoices,
-		  SUM(CASE WHEN invoices.status = 'pending' THEN invoices.amount ELSE 0 END) AS total_pending,
-		  SUM(CASE WHEN invoices.status = 'paid' THEN invoices.amount ELSE 0 END) AS total_paid
-		FROM customers
-		LEFT JOIN invoices ON customers.id = invoices.customer_id
-		WHERE
-		  customers.name ILIKE ${`%${query}%`} OR
+    SELECT
+      customers.id,
+      customers.name,
+      customers.email,
+      customers.image_url,
+      COUNT(invoices.id) AS total_invoices,
+      SUM(CASE WHEN invoices.status = 'pending' THEN invoices.amount ELSE 0 END) AS total_pending,
+      SUM(CASE WHEN invoices.status = 'paid' THEN invoices.amount ELSE 0 END) AS total_paid
+    FROM customers
+    LEFT JOIN invoices ON customers.id = invoices.customer_id
+    WHERE
+      customers.name ILIKE ${`%${query}%`} OR
         customers.email ILIKE ${`%${query}%`}
-		GROUP BY customers.id, customers.name, customers.email, customers.image_url
-		ORDER BY customers.name ASC
-	  `;
+    GROUP BY customers.id, customers.name, customers.email, customers.image_url
+    ORDER BY customers.name ASC
+    `;
 
     const customers = data.map((customer) => ({
       ...customer,

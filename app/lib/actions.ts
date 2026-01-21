@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import postgres from 'postgres';
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
+import bcrypt from 'bcryptjs';
 
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });
 
@@ -17,6 +18,20 @@ export type State = {
   };
   message?: string | null;
 };
+
+// ユーザーをデータベースから削除するサーバーアクション
+export async function deleteUser(id: string) { 
+  // try-catch ブロックを修正して、エラーメッセージを返す代わりに throw Error を使用
+  try {
+    await sql`DELETE FROM users WHERE id = ${id}`;
+    revalidatePath('/dashboard/users');
+  } catch (error) {
+    console.error('Database Error:', error);
+    // エラーが発生した場合は、エラーをスローして呼び出し元に伝えます
+    throw new Error('Failed to delete user.'); // ✨ ここを修正
+  }
+}
+
 
 const FormSchema = z.object({
   id: z.string(),
